@@ -1,1 +1,202 @@
-<!DOCTYPE html><html><head><title>i viaggi di Da.Ni.</title></head><body>App in sviluppo...</body></html>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista Viaggio Completa</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f5f9; }
+        .container { max-width: 900px; margin: auto; }
+        h1, h2 { color: #2a5d84; text-align: center; }
+        select, input { padding: 8px; width: 100%; margin-bottom: 10px; }
+        button { cursor: pointer; padding: 8px 15px; margin: 5px; border: none; border-radius: 5px; }
+        #categories { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+        .category-btn { background: #4a89dc; color: white; }
+        #suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .suggestion { background: #e3e9f2; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        #list { list-style: none; padding: 0; }
+        #list li { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; align-items: center; flex-wrap: wrap; }
+        .checked { text-decoration: line-through; color: #888; }
+        .removeBtn { margin-left: auto; background: #e74c3c; color: white; padding: 5px 10px; border-radius: 3px; }
+        .quantityInput { width: 50px; margin: 0 10px; padding: 5px; text-align: center; }
+        #addBtn { background: #27ae60; }
+        #exportBtn { background: #3498db; }
+        #whatsappBtn { background: #25D366; }
+        .itemText { flex-grow: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ Lista Viaggio Completa</h1>
+        
+        <select id="tripType">
+            <option value="">-- Seleziona viaggio --</option>
+            <option value="mare">🏖️ Mare</option>
+            <option value="montagna">⛰️ Montagna</option>
+            <option value="citta">🏙️ Città</option>
+        </select>
+        
+        <div id="categories"></div>
+        <div id="suggestions"></div>
+        
+        <h2>📝 La tua lista</h2>
+        <ul id="list"></ul>
+        
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <input type="text" id="newItem" placeholder="Oggetto" style="flex: 3;">
+            <input type="number" min="1" value="1" id="newQuantity" placeholder="Q.tà" style="flex: 1;">
+            <button id="addBtn" onclick="addCustomItem()">➕ Aggiungi</button>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button id="exportBtn" onclick="exportPDF()">📤 Esporta PDF</button>
+            <button id="whatsappBtn" onclick="shareWhatsApp()">💬 WhatsApp</button>
+        </div>
+    </div>
+
+    <script>
+        const tripData = {
+            mare: {
+                "Abbigliamento 👕": [
+                    "Costume da bagno 🩱", "T-shirt 👕", "Pantaloncini 👖", "Canottiere 🩳", 
+                    "Vestiti leggeri 👗", "Gonna 👚", "Camicia di lino 👔", "Pigiama 🛌", 
+                    "Intimo 🩲", "Calzini leggeri 🧦", "Cappello 🧢", "Occhiali da sole 🕶️", 
+                    "Foulard 🧣", "Maglia maniche lunghe 🧥", "Giacca antivento 🧥", "Pareo 🏖️", 
+                    "Sottoveste leggera 🩲"
+                ],
+                "Protezione 🧴": [
+                    "Crema SPF 50 🧴", "Stick labbra SPF 💋", "Doposole 🧴", "Spray repellente 🦟", 
+                    "Aloe vera 🌱", "Salviette umidificate 🧻", "Disinfettante mani 🧴", 
+                    "Crema viso SPF 🧴", "Shampoo doposole 🧴", "Balsamo doposole 🧴", 
+                    "Spray rinfrescante 🌬️", "Crema scottature 🧴", "Cappello tesa larga 🧢", 
+                    "Olio idratante 🧴", "Borraccia termica 🧊", "Termometro 🌡️", "Specchietto 🪞"
+                ]
+            },
+            montagna: {
+                "Abbigliamento 🧥": [
+                    "Giacca termica 🧥", "Maglia tecnica 👕", "Pantaloni trekking 👖", "Guanti 🧤", 
+                    "Cappello 🧢", "Scarponi 🥾", "Calze 🧦", "Zaino 🎒", "Felpa 🧥", "Sottoveste 🩲", 
+                    "Giacca antivento 🧥", "Copricapo impermeabile 🧢", "Pile 🧥", "Calzoncini 🩳", 
+                    "Gilet 🧥", "Bandana 🧣", "Calze termiche 🧦"
+                ],
+                "Sicurezza 🧗": [
+                    "Bastoni 🦯", "Mappa 🗺️", "Bussola 🧭", "Kit soccorso 🩹", "Fischietto 🦯", 
+                    "Torcia 🔦", "Coltellino 🔪", "Corda 🪢", "Power bank 🔋", "Termos ☕", 
+                    "GPS 📡", "Radio 📻", "Tenda ⛺", "Sacco a pelo 🛌", "Piccozza ⛏️", 
+                    "Cramponi 🧊", "Filtro acqua 🚰"
+                ]
+            },
+            citta: {
+                "Documenti 🪪": [
+                    "Carta identità 🪪", "Passaporto 🛂", "Biglietti 🎫", "Tessera 🪪", 
+                    "Contanti 💶", "Carta credito 💳", "Mappa 🗺️", "Assicurazione 📄", 
+                    "Penna 🖊️", "Taccuino 📓", "Tessera trasporti 🚇", "Visti 🛃", 
+                    "Fotocopie documenti 📑", "Indirizzi 📇", "Prenotazioni 🏨", 
+                    "Lista contatti 📞", "QR code 📲"
+                ]
+            }
+        };
+
+        // Funzioni
+        document.getElementById('tripType').addEventListener('change', function() {
+            const tripType = this.value;
+            const categoriesDiv = document.getElementById('categories');
+            categoriesDiv.innerHTML = '';
+            
+            if (tripData[tripType]) {
+                Object.keys(tripData[tripType]).forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = 'category-btn';
+                    btn.textContent = cat;
+                    btn.onclick = () => showSuggestions(tripType, cat);
+                    categoriesDiv.appendChild(btn);
+                });
+            }
+        });
+
+        function showSuggestions(tripType, cat) {
+            const suggestions = tripData[tripType][cat] || [];
+            const box = document.getElementById('suggestions');
+            box.innerHTML = '';
+            
+            suggestions.slice(0, 10).forEach(item => { // Mostra primi 10 suggerimenti
+                const div = document.createElement('div');
+                div.className = 'suggestion';
+                div.textContent = item;
+                div.onclick = () => addItem(item, 1);
+                box.appendChild(div);
+            });
+        }
+
+        function addItem(item, qty = 1) {
+            const li = document.createElement('li');
+            
+            const span = document.createElement('span');
+            span.className = 'itemText';
+            span.textContent = item;
+            
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '1';
+            input.value = qty;
+            input.className = 'quantityInput';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'removeBtn';
+            removeBtn.textContent = '❌';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                li.remove();
+            };
+            
+            li.appendChild(span);
+            li.appendChild(input);
+            li.appendChild(removeBtn);
+            li.onclick = () => li.classList.toggle('checked');
+            document.getElementById('list').appendChild(li);
+        }
+
+        function addCustomItem() {
+            const item = document.getElementById('newItem').value.trim();
+            const qty = document.getElementById('newQuantity').value || 1;
+            
+            if (item) {
+                addItem(item, qty);
+                document.getElementById('newItem').value = '';
+                document.getElementById('newQuantity').value = 1;
+            }
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(18);
+            doc.text("Lista Viaggio", 10, 15);
+            doc.setFontSize(12);
+            
+            let y = 30;
+            document.querySelectorAll('#list li').forEach(li => {
+                const item = li.querySelector('.itemText').textContent;
+                const qty = li.querySelector('.quantityInput').value;
+                doc.text(`• ${item} (x${qty})`, 10, y);
+                y += 10;
+            });
+            
+            doc.save('lista_viaggio.pdf');
+        }
+
+        function shareWhatsApp() {
+            let text = "Lista viaggio:\n";
+            document.querySelectorAll('#list li').forEach(li => {
+                const item = li.querySelector('.itemText').textContent;
+                const qty = li.querySelector('.quantityInput').value;
+                text += `- ${item} (x${qty})\n`;
+            });
+            
+            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
